@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Severe Weather Outlook - Real-Time Threat Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0f172a;
+            --primary-light: #1e293b;
+            --danger: #dc2626;
+            --warning: #ea580c;
+            --moderate: #f59e0b;
+            --marginal: #22c55e;
+            --accent: #3b82f6;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: #334155;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #1a1f3a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        header {
+            background: var(--primary-light);
+            border-bottom: 2px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Location Input Section */
+        .location-section {
+            background: var(--primary-light);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .location-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-wrapper label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="search"] {
+            padding: 0.75rem 1rem;
+            background: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="search"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.8));
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #0284c7 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Threat Analysis Container */
+        .threat-container {
+            margin: 2rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        /* Threat Card */
+        .threat-card {
+            background: var(--primary-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .threat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent);
+        }
+
+        .threat-card.danger { --accent: var(--danger); }
+        .threat-card.warning { --accent: var(--warning); }
+        .threat-card.moderate { --accent: var(--moderate); }
+        .threat-card.marginal { --accent: var(--marginal); }
+
+        .threat-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .threat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .threat-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .threat-severity {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .threat-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .threat-description {
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .threat-description strong {
+            color: var(--text-primary);
+        }
+
+        .threat-timing {
+            background: var(--primary-dark);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .timing-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .timing-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .threat-probabilities {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--primary-dark);
+            border-radius: 8px;
+        }
+
+        .probability-item {
+            text-align: center;
+        }
+
+        .probability-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .probability-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        /* Alert Section */
+        .alerts-section {
+            margin: 2rem;
+            background: var(--primary-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent);
+        }
+
+        .alerts-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .alert-item {
+            background: var(--primary-dark);
+            border-left: 4px solid var(--warning);
+            padding: 1.5rem;
+            border-radius: 6px;
+            line-height: 1.6;
+        }
+
+        .alert-item.danger {
+            border-left-color: var(--danger);
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .alert-item.warning {
+            border-left-color: var(--warning);
+            background: rgba(234, 88, 12, 0.05);
+        }
+
+        .alert-item.moderate {
+            border-left-color: var(--moderate);
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .alert-header {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .alert-type {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            background: var(--accent);
+            color: white;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-right: 0.5rem;
+            letter-spacing: 0.3px;
+        }
+
+        .alert-timestamp {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Maps Section */
+        .maps-section {
+            margin: 2rem;
+            background: var(--primary-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .maps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .map-container {
+            background: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .map-placeholder {
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .map-source {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* Status Section */
+        .status-banner {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 2rem 2rem 0;
+            color: var(--success);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-banner.loading {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .status-banner.error {
+            background: rgba(220, 38, 38, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-light);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem;
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .footer-links {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Loading Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .threat-content {
+                grid-template-columns: 1fr;
+            }
+
+            .maps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .threat-container {
+                margin: 1rem;
+            }
+
+            .location-section,
+            .alerts-section,
+            .maps-section {
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌪️ Severe Weather Outlook</h1>
+        <p class="header-subtitle">Real-Time Threat Analysis & Forecasts</p>
+    </header>
+
+    <div class="status-banner" id="statusBanner" style="display: none;"></div>
+
+    <!-- Location Input Section -->
+    <section class="location-section">
+        <div class="location-title">📍 Select Your Location</div>
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label for="cityState">City & State</label>
+                <input type="text" id="cityState" placeholder="e.g., Oklahoma City, OK" autocomplete="off">
+            </div>
+            <div class="input-wrapper">
+                <label for="zipCode">ZIP Code</label>
+                <input type="text" id="zipCode" placeholder="e.g., 73102" autocomplete="off">
+            </div>
+        </div>
+        <div class="button-group">
+            <button class="btn-primary" onclick="searchLocation()">Analyze Threats</button>
+            <button class="btn-secondary" onclick="useCurrentLocation()">📡 Use Current Location</button>
+        </div>
+    </section>
+
+    <!-- Threat Analysis Container -->
+    <div class="threat-container" id="threatContainer">
+        <div class="empty-state">
+            <div class="empty-state-icon">📍</div>
+            <h3>Enter a location to begin</h3>
+            <p>Search by city & state or ZIP code to view real-time severe weather threats and forecasts</p>
+        </div>
+    </div>
+
+    <!-- Alerts Section -->
+    <section class="alerts-section" id="alertsSection" style="display: none;">
+        <h2 class="section-title">⚠️ Active Alerts & Warnings</h2>
+        <div class="alerts-grid" id="alertsGrid">
+            <div class="alert-item loading">Loading alerts...</div>
+        </div>
+    </section>
+
+    <!-- Maps Section -->
+    <section class="maps-section" id="mapsSection" style="display: none;">
+        <h2 class="section-title">🗺️ Threat Maps</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            Maps update regularly from NOAA/NWS Storm Prediction Center and National Weather Service
+        </p>
+        <div class="maps-grid">
+            <div>
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Day 1 Convective Outlook</h3>
+                <div class="map-container">
+                    <div class="map-placeholder">
+                        <p>📊 SPC Day 1 Outlook</p>
+                        <p class="map-source">Source: NOAA Storm Prediction Center</p>
+                        <p style="margin-top: 1rem; font-size: 0.85rem;">
+                            <a href="https://www.spc.noaa.gov/products/outlook/day1otlk.html" 
+                               target="_blank" style="color: var(--accent); text-decoration: underline;">
+                                View Live Map →
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Day 2 Convective Outlook</h3>
+                <div class="map-container">
+                    <div class="map-placeholder">
+                        <p>📊 SPC Day 2 Outlook</p>
+                        <p class="map-source">Source: NOAA Storm Prediction Center</p>
+                        <p style="margin-top: 1rem; font-size: 0.85rem;">
+                            <a href="https://www.spc.noaa.gov/products/outlook/day2otlk.html" 
+                               target="_blank" style="color: var(--accent); text-decoration: underline;">
+                                View Live Map →
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <p>Data provided by NOAA - National Oceanic and Atmospheric Administration</p>
+            <p>Storm Prediction Center (SPC) & National Weather Service (NWS)</p>
+            <div class="footer-links">
+                <a href="https://www.spc.noaa.gov/" target="_blank">SPC Official Site</a>
+                <a href="https://api.weather.gov/" target="_blank">NWS API Documentation</a>
+                <a href="https://www.weather.gov/" target="_blank">Weather.gov</a>
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </div>
+            <p style="margin-top: 1rem;">
+                For life-threatening weather, rely on your local National Weather Service office and NOAA Weather Radio
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // NOAA API Configuration
+        const API_BASE = 'https://api.weather.gov';
+        const ALERTS_ENDPOINT = `${API_BASE}/alerts/active`;
+
+        // Threat data (mock for demonstration - replace with real SPC data)
+        const threatExamples = {
+            tornado: {
+                severity: 'EXTREME',
+                class: 'danger',
+                description: 'A significant tornado threat is possible across the area. Multiple tornadoes are expected with some strong to violent.',
+                timing: 'This Afternoon - Evening',
+                probability: { tornado: '45%', hail: '60%', wind: '40%' }
+            },
+            severe: {
+                severity: 'HIGH',
+                class: 'warning',
+                description: 'Scattered severe thunderstorms are possible with damaging wind gusts and large hail as the main threats.',
+                timing: '2:00 PM - 8:00 PM',
+                probability: { tornado: '5%', hail: '30%', wind: '40%' }
+            },
+            moderate: {
+                severity: 'MODERATE',
+                class: 'moderate',
+                description: 'Isolated severe thunderstorms are possible with hail and gusty winds.',
+                timing: '3:00 PM - 9:00 PM',
+                probability: { tornado: '2%', hail: '15%', wind: '20%' }
+            },
+            marginal: {
+                severity: 'LOW',
+                class: 'marginal',
+                description: 'An isolated severe thunderstorm is possible.',
+                timing: '4:00 PM - 10:00 PM',
+                probability: { tornado: '1%', hail: '5%', wind: '10%' }
+            }
+        };
+
+        function showStatus(message, type = 'loading') {
+            const banner = document.getElementById('statusBanner');
+            banner.textContent = message;
+            banner.className = `status-banner ${type}`;
+            banner.style.display = 'flex';
+            
+            if (type === 'success') {
+                setTimeout(() => banner.style.display = 'none', 5000);
+            }
+        }
+
+        function displayThreatAnalysis(lat, lon, locationName) {
+            showStatus('Analyzing severe weather threats...', 'loading');
+            
+            const container = document.getElementById('threatContainer');
+            container.innerHTML = '';
+
+            // Display threat cards (using example data)
+            Object.entries(threatExamples).forEach(([key, threat]) => {
+                const card = createThreatCard(threat, key);
+                container.appendChild(card);
+            });
+
+            // Fetch and display alerts
+            fetchAlerts(lat, lon);
+            
+            // Show maps section
+            document.getElementById('mapsSection').style.display = 'block';
+            
+            showStatus(`Threats loaded for ${locationName}`, 'success');
+        }
+
+        function createThreatCard(threat, threatType) {
+            const card = document.createElement('div');
+            card.className = `threat-card ${threat.class}`;
+
+            const threatIcons = {
+                tornado: '🌪️',
+                severe: '⚡',
+                moderate: '🌩️',
+                marginal: '☁️'
+            };
+
+            card.innerHTML = `
+                <div class="threat-header">
+                    <h3 class="threat-title">
+                        ${threatIcons[threatType]} ${threatType.toUpperCase()} THREAT
+                    </h3>
+                    <span class="threat-severity">${threat.severity}</span>
+                </div>
+
+                <div class="threat-content">
+                    <div>
+                        <div class="threat-description">
+                            ${threat.description}
+                        </div>
+                    </div>
+                    <div class="threat-timing">
+                        <div class="timing-label">Threat Timing</div>
+                        <div class="timing-value">${threat.timing}</div>
+                    </div>
+                </div>
+
+                <div class="threat-probabilities">
+                    <div class="probability-item">
+                        <div class="probability-label">Tornado</div>
+                        <div class="probability-value">${threat.probability.tornado}</div>
+                    </div>
+                    <div class="probability-item">
+                        <div class="probability-label">Hail</div>
+                        <div class="probability-value">${threat.probability.hail}</div>
+                    </div>
+                    <div class="probability-item">
+                        <div class="probability-label">Wind</div>
+                        <div class="probability-value">${threat.probability.wind}</div>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        async function fetchAlerts(lat, lon) {
+            try {
+                const response = await fetch(`${ALERTS_ENDPOINT}?point=${lat.toFixed(4)},${lon.toFixed(4)}`);
+                const data = await response.json();
+                displayAlerts(data.features);
+            } catch (error) {
+                console.error('Error fetching alerts:', error);
+                showStatus('Error loading alerts', 'error');
+                displayNoAlerts();
+            }
+        }
+
+        function displayAlerts(alerts) {
+            const alertsSection = document.getElementById('alertsSection');
+            const alertsGrid = document.getElementById('alertsGrid');
+
+            if (alerts.length === 0) {
+                displayNoAlerts();
+                return;
+            }
+
+            alertsSection.style.display = 'block';
+            alertsGrid.innerHTML = '';
+
+            alerts.slice(0, 5).forEach(alert => {
+                const properties = alert.properties;
+                const alertElement = document.createElement('div');
+                
+                let alertType = 'warning';
+                const event = properties.event.toLowerCase();
+                if (event.includes('tornado') || event.includes('warning')) {
+                    alertType = 'danger';
+                } else if (event.includes('watch')) {
+                    alertType = 'warning';
+                } else if (event.includes('advisory')) {
+                    alertType = 'moderate';
+                }
+
+                alertElement.className = `alert-item ${alertType}`;
+                alertElement.innerHTML = `
+                    <div class="alert-header">
+                        <span class="alert-type">${properties.event}</span>
+                    </div>
+                    <p>${properties.headline || 'No headline available'}</p>
+                    <div class="alert-timestamp">
+                        Issued: ${new Date(properties.sent).toLocaleString()}
+                    </div>
+                `;
+                alertsGrid.appendChild(alertElement);
+            });
+
+            showStatus('', '');
+        }
+
+        function displayNoAlerts() {
+            const alertsSection = document.getElementById('alertsSection');
+            const alertsGrid = document.getElementById('alertsGrid');
+            
+            alertsGrid.innerHTML = `
+                <div class="alert-item" style="border-left-color: var(--success);">
+                    <div class="alert-header">✓ No Active Alerts</div>
+                    <p>No active warnings or watches for this location at this time.</p>
+                </div>
+            `;
+            alertsSection.style.display = 'block';
+        }
+
+        async function searchLocation() {
+            const cityState = document.getElementById('cityState').value;
+            const zipCode = document.getElementById('zipCode').value;
+            let query = cityState || zipCode;
+
+            if (!query) {
+                showStatus('Please enter a city, state, or ZIP code', 'error');
+                return;
+            }
+
+            showStatus('Finding coordinates...', 'loading');
+
+            try {
+                // Use geocoding (for production, use proper geocoding API)
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const results = await response.json();
+
+                if (results.length === 0) {
+                    showStatus('Location not found. Please try again.', 'error');
+                    return;
+                }
+
+                const location = results[0];
+                displayThreatAnalysis(parseFloat(location.lat), parseFloat(location.lon), location.display_name);
+            } catch (error) {
+                console.error('Error searching location:', error);
+                showStatus('Error searching for location', 'error');
+            }
+        }
+
+        function useCurrentLocation() {
+            showStatus('Getting your location...', 'loading');
+            
+            if (!navigator.geolocation) {
+                showStatus('Geolocation not supported by your browser', 'error');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    // Reverse geocode to get location name
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            const locationName = data.address?.city || data.address?.county || 'Current Location';
+                            displayThreatAnalysis(latitude, longitude, locationName);
+                            document.getElementById('cityState').value = locationName;
+                        });
+                },
+                (error) => {
+                    showStatus('Unable to access your location', 'error');
+                    console.error('Geolocation error:', error);
+                }
+            );
+        }
+
+        // Allow Enter key for search
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('cityState').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchLocation();
+            });
+            document.getElementById('zipCode').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchLocation();
+            });
+        });
+    </script>
+</body>
+</html>
